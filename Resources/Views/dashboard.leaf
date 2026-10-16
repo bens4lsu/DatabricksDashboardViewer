@@ -1,0 +1,212 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>#(title)</title>
+    <style>
+        :root {
+            --bg-primary: #0b111e;
+            --bg-card: #141c2e;
+            --text-primary: #f8fafc;
+            --text-secondary: #94a3b8;
+            --accent: #ff3621;
+            --accent-hover: #e02f1c;
+            --border: #243048;
+        }
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            background-color: var(--bg-primary);
+            color: var(--text-primary);
+            display: flex;
+            flex-direction: column;
+            height: 100vh;
+            overflow: hidden;
+        }
+        header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 12px 24px;
+            background: var(--bg-card);
+            border-bottom: 1px solid var(--border);
+            z-index: 10;
+        }
+        .logo-group {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+        .brand-badge {
+            background: var(--accent);
+            color: #fff;
+            font-weight: 700;
+            font-size: 11px;
+            text-transform: uppercase;
+            padding: 3px 8px;
+            border-radius: 4px;
+            letter-spacing: 0.5px;
+        }
+        h1 {
+            font-size: 16px;
+            font-weight: 600;
+            letter-spacing: -0.3px;
+        }
+        .meta-tags {
+            display: flex;
+            align-items: center;
+            gap: 16px;
+            font-size: 13px;
+            color: var(--text-secondary);
+        }
+        .tag {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            background: rgba(255, 255, 255, 0.05);
+            padding: 4px 10px;
+            border-radius: 6px;
+            border: 1px solid var(--border);
+        }
+        .tag strong {
+            color: var(--text-primary);
+        }
+        .main-viewport {
+            position: relative;
+            flex: 1;
+            width: 100%;
+            height: calc(100vh - 61px);
+            background: #ffffff;
+        }
+        #dashboard-container {
+            width: 100%;
+            height: 100%;
+        }
+        #loading-overlay {
+            position: absolute;
+            inset: 0;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            background: var(--bg-primary);
+            color: var(--text-primary);
+            z-index: 5;
+            transition: opacity 0.3s ease;
+        }
+        .spinner {
+            width: 40px;
+            height: 40px;
+            border: 3px solid rgba(255, 54, 33, 0.2);
+            border-top-color: var(--accent);
+            border-radius: 50%;
+            animation: spin 0.8s linear infinite;
+            margin-bottom: 16px;
+        }
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+        #error-overlay {
+            display: none;
+            position: absolute;
+            inset: 0;
+            background: var(--bg-primary);
+            color: #fca5a5;
+            padding: 32px;
+            align-items: center;
+            justify-content: center;
+            flex-direction: column;
+            text-align: center;
+            z-index: 6;
+        }
+        #error-overlay h2 {
+            margin-bottom: 12px;
+            color: #ef4444;
+        }
+        #error-overlay pre {
+            background: rgba(0, 0, 0, 0.4);
+            padding: 12px 20px;
+            border-radius: 6px;
+            font-family: monospace;
+            font-size: 13px;
+            max-width: 600px;
+            white-space: pre-wrap;
+            word-break: break-all;
+        }
+    </style>
+</head>
+<body>
+    <!--<header>
+        <div class="logo-group">
+            <span class="brand-badge">Databricks AI/BI</span>
+            <h1>Embedded Dashboard Viewer</h1>
+        </div>
+        <div class="meta-tags">
+            <span class="tag">Viewer ID: <strong>#(viewerId)</strong></span>
+            <span class="tag">Filter Scope: <strong>#(externalValue)</strong></span>
+        </div>
+    </header>-->
+
+    <div class="main-viewport">
+        <div id="loading-overlay">
+            <div class="spinner"></div>
+            <p>Authenticating and rendering embedded dashboard...</p>
+        </div>
+        
+        <div id="error-overlay">
+            <h2>Embedding Failed to Initialize</h2>
+            <pre id="error-message"></pre>
+        </div>
+
+        <div id="dashboard-container"></div>
+    </div>
+
+    <!-- Databricks AI/BI Client SDK -->
+    <script type="module">
+        import { DatabricksDashboard } from "https://cdn.jsdelivr.net/npm/@databricks/aibi-client@1.2.0/+esm";
+
+        const config = {
+            instanceUrl: "#(instanceUrl)",
+            workspaceId: "#(workspaceId)",
+            dashboardId: "#(dashboardId)",
+            token: "#(token)",
+            container: document.getElementById("dashboard-container"),
+            config: {
+                version: 1,
+                hideDatabricksLogo: false,
+                globalFilterVisibility: "shownByDefault"
+            }
+        };
+
+        const loadingEl = document.getElementById("loading-overlay");
+        const errorEl = document.getElementById("error-overlay");
+        const errorMsgEl = document.getElementById("error-message");
+
+        try {
+            // Initialize the dashboard iframe inside the container
+            const dashboard = new DatabricksDashboard(config);
+            await dashboard.initialize();
+
+            // Hide loading indicator upon initialization
+            loadingEl.style.opacity = "0";
+            setTimeout(() => { loadingEl.style.display = "none"; }, 300);
+
+            // Optional: Listen for filter updates from the embedded iframe
+            dashboard.onFiltersChanged((filters) => {
+                console.log("[Databricks Embedded] Filters changed:", filters);
+            });
+
+        } catch (err) {
+            console.error("[Databricks Embedded] Initialization error:", err);
+            loadingEl.style.display = "none";
+            errorEl.style.display = "flex";
+            errorMsgEl.textContent = err.message || JSON.stringify(err);
+        }
+    </script>
+</body>
+</html>

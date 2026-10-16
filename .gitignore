@@ -1,0 +1,33 @@
+# ==============================================================================
+# Swift / Vapor / SPM .gitignore
+# ==============================================================================
+
+# Swift Package Manager Build Artifacts
+.build/
+Packages/
+.swiftpm/
+
+# Environment Variables & Secrets (CRITICAL)
+.env
+.env.*
+!.env.example
+
+# macOS System Files
+.DS_Store
+.AppleDouble
+.LSOverride
+._*
+
+# Xcode Workspace & User Data (if generated via `swift package generate-xcodeproj` or Xcode SPM)
+*.xcodeproj
+*.xcworkspace
+xcuserdata/
+DerivedData/
+*.xcuserstate
+
+# Editor & Scratch Files
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
